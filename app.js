@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const ejs = require("ejs");
 const bodyParser = require("body-parser");
+const encrypt = require("mongoose-encryption");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -19,10 +20,14 @@ async function main() {
   mongoose.connect(DB_URL);
 }
 
-const userSchema = {
+const userSchema = new mongoose.Schema({
   email: String,
   password: String,
-};
+});
+
+const secret = "thisismysecret";
+userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
+
 const User = new mongoose.model("user", userSchema);
 
 app.get("/", (req, res) => {
@@ -55,13 +60,12 @@ app.post("/login", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
 
-  User.findOne({ email: username, password: password }, (err, result) => {
+  User.findOne({ email: username }, (err, result) => {
     if (err) console.error(err);
     else {
-      if(result){
+      if (result.password === password) {
         res.render("secrets");
-      }
-      else{
+      } else {
         res.send("Invalid credentials!");
       }
     }
