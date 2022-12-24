@@ -3,7 +3,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const ejs = require("ejs");
 const bodyParser = require("body-parser");
-const encrypt = require("mongoose-encryption");
+// const encrypt = require("mongoose-encryption");
+const md5 = require("md5");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -26,7 +27,7 @@ const userSchema = new mongoose.Schema({
 });
 
 const secret = process.env.SECRET;
-userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
+// userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
 
 const User = new mongoose.model("user", userSchema);
 
@@ -45,7 +46,7 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   const newUser = new User({
     email: req.body.username,
-    password: req.body.password,
+    password: md5( req.body.password ),         // hashing the password with md5
   });
   newUser.save((err) => {
     if (err) console.error(err);
@@ -63,7 +64,7 @@ app.post("/login", (req, res) => {
   User.findOne({ email: username }, (err, result) => {
     if (err) console.error(err);
     else {
-      if (result.password === password) {
+      if (result.password === md5( password ) ) {     // checking both password's hash for equality
         res.render("secrets");
       } else {
         res.send("Invalid credentials!");
